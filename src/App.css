@@ -1,10 +1,9 @@
-/* Custom scrollbar hiding using Tailwind */
+/* src/scrollbar.css */
 .hide-scrollbar {
-   scrollbar-width: none; /* Firefox */
-   -ms-overflow-style: none; /* IE and Edge */
- }
- 
- .hide-scrollbar::-webkit-scrollbar {
-   display: none; /* Chrome, Safari, and Edge */
- }
- 
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, and Edge */
+}
