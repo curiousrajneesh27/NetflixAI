@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Netflix gpt
 
 Create React app
@@ -54,3 +55,7 @@ Browse(After Auth)
 Netflix gpt
    SEARCH Bar
    movie Suggestion 
+=======
+# NetflixGptFinal
+Final project of Netflix GPT
+>>>>>>> 517a6b7a76e48dee2a2e89d73411723ce0b7d266
