@@ -16,7 +16,7 @@ const Header = () => {
     const handleSignOut = () => {
     signOut(auth)
       .then(() => {
-        navigate("/"); // Navigate to home page after sign out
+        navigate("/");
       })
       .catch(() => {
         navigate("/error"); // Navigate to error page if sign out fails

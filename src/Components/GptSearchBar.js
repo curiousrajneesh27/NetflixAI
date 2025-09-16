@@ -9,8 +9,8 @@ const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' }); // Select
 
 const GptSearchBar = () => {
   const langkey = useSelector((store) => store.config.lang); // Get language key from Redux
-  const searchText = useRef(null); // Reference for search input
-  const [movieResults, setMovieResults] = useState([]); // State to store movie results
+  const searchText = useRef(null);
+  const [movieResults, setMovieResults] = useState([]);
 
   // Function to fetch movie details from TMDB API
   const searchMovieTMDB = async (movie) => {
@@ -22,7 +22,7 @@ const GptSearchBar = () => {
       const json = await response.json();
       return json.results || [];
     } catch (error) {
-      console.error('Error fetching movie details from TMDB:', error);
+      console.error('Errro Fetching details from TMDB Movie database:', error);
       return [];
     }
   };
