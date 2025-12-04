@@ -1,4 +1,8 @@
 {
     "editor.detectIndentation": true,
-    "editor.tabSize": 3
+    "editor.tabSize": 3,
+    "chat.agent.thinking.collapsedTools": "all",
+    "inlineChat.notebookAgent": true,
+    "github.copilot.chat.agent.autoFix": true,
+    "chat.useNestedAgentsMdFiles": false
 }
