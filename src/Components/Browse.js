@@ -21,7 +21,7 @@ const Browse = () => {
   useHorrorMovies();
 
   return (
-    <div>
+    <div className="min-h-screen">
       <Header />
       {showGptSearch ? (
         <GptSearch />
