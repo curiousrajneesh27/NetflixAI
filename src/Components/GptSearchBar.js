@@ -1,55 +1,79 @@
-import React, { useRef, useState } from 'react';
-import { useSelector } from 'react-redux'; // For Redux state
-import lang from '../Utils/languageConstants'; // Language constants
-import { API_OPTIONS, GEMINI_KEY } from '../Utils/constant'; // API constants
+import React, { useRef, useState } from "react";
+import { useSelector } from "react-redux"; // For Redux state
+import lang from "../Utils/languageConstants"; // Language constants
+import { API_OPTIONS, GEMINI_KEY } from "../Utils/constant"; // API constants
 
-const { GoogleGenerativeAI } = require('@google/generative-ai'); // Import Google Generative AI
-const genAI = new GoogleGenerativeAI(GEMINI_KEY); // Initialize with API key
-const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' }); // Select AI model
+const { GoogleGenerativeAI } = require("@google/generative-ai"); // Import Google Generative AI
 
 const GptSearchBar = () => {
   const langkey = useSelector((store) => store.config.lang); // Get language key from Redux
   const searchText = useRef(null);
   const [movieResults, setMovieResults] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   // Function to fetch movie details from TMDB API
   const searchMovieTMDB = async (movie) => {
     try {
-      const response = await fetch(
-        `https://api.themoviedb.org/3/search/movie?query=${movie}&include_adult=false&language=en-US&page=1`,
-        API_OPTIONS
-      );
+      const url = `https://api.themoviedb.org/3/search/movie?query=${encodeURIComponent(
+        movie
+      )}&include_adult=false&language=en-US&page=1`;
+      console.log("Fetching from TMDB URL:", url);
+      console.log("API Options:", API_OPTIONS);
+
+      const response = await fetch(url, API_OPTIONS);
+
+      if (!response.ok) {
+        console.error(
+          "TMDB Response not OK:",
+          response.status,
+          response.statusText
+        );
+        throw new Error(`TMDB API error: ${response.status}`);
+      }
+
       const json = await response.json();
+      console.log("TMDB API Response:", json);
+
       return json.results || [];
     } catch (error) {
-      console.error('Errro Fetching details from TMDB Movie database:', error);
-      return [];
+      console.error("Error Fetching details from TMDB Movie database:", error);
+      throw error;
     }
   };
 
   // Handle GPT search button click
   const handleGptSearchClick = async () => {
-    const gptQuery =
-      'Act as a Movie Recommendation System and suggest some movies for the Query ' +
-      searchText.current.value +
-      '. Only give me names of 5 movies, comma separated like the example given ahead. Example Result: Gadar, Sholey, Don, Golmal, Koi Mil Gaya';
+    if (!searchText.current.value.trim()) {
+      setError("Please enter a search query");
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+    setMovieResults([]);
 
     try {
-      const result = await model.generateContent(gptQuery); // Fetch data from GPT
-      const responseText = result.response.text(); // Extract text response
+      console.log("Searching for:", searchText.current.value);
 
-      // Split response into individual movie names
-      const movieList = responseText.split(',').map((movie) => movie.trim());
+      // Search directly from TMDB
+      const searchQuery = searchText.current.value;
+      const movieData = await searchMovieTMDB(searchQuery);
 
-      // Fetch additional details from TMDB for each movie
-      const movieDataPromises = movieList.map((movie) => searchMovieTMDB(movie));
-      const movieData = await Promise.all(movieDataPromises);
+      console.log("Search Results count:", movieData.length);
+      console.log("Search Results:", movieData);
 
-      // Flatten and set all movie results in state
-      const allMovies = movieData.flat();
-      setMovieResults(allMovies);
+      if (movieData.length === 0) {
+        setError("No movies found. Try a different search.");
+      } else {
+        // Show all movies, even without posters
+        setMovieResults(movieData);
+      }
     } catch (error) {
-      console.error('Error fetching data from GPT or TMDB:', error);
+      console.error("Error searching movies:", error);
+      setError(error.message || "Failed to fetch movies. Please try again.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -64,32 +88,65 @@ const GptSearchBar = () => {
           ref={searchText}
           type="text"
           className="p-4 m-4 col-span-9 text-white bg-gray-700 rounded-lg"
-          placeholder={lang[langkey]?.gptSearchPlaceholder || 'Search for a movie...'}
+          placeholder={
+            lang[langkey]?.gptSearchPlaceholder || "Search for a movie..."
+          }
         />
         <button
-          className="col-span-3 m-4 py-2 px-4 bg-red-700 text-white rounded-lg"
+          className="col-span-3 m-4 py-2 px-4 bg-red-700 text-white rounded-lg hover:bg-red-800 disabled:bg-gray-600"
           onClick={handleGptSearchClick}
+          disabled={loading}
         >
-          {lang[langkey]?.search || 'Search'}
+          {loading ? "Searching..." : lang[langkey]?.search || "Search"}
         </button>
       </form>
 
+      {/* Error message */}
+      {error && (
+        <div className="mt-4 p-4 bg-red-600 text-white rounded-lg max-w-3xl">
+          {error}
+        </div>
+      )}
+
+      {/* Loading state */}
+      {loading && (
+        <div className="mt-6 text-white text-xl">
+          🎬 Searching for movies...
+        </div>
+      )}
+
       {/* Movie results */}
-      <div className="mt-6 w-full px-4 z-10 relative max-h-[calc(100vh-200px)] overflow-y-auto">
-  <div className="flex flex-wrap justify-center space-x-4">
-    {movieResults.map((movie) => (
-      <div key={movie.id} className="bg-gray-800 text-white p-2 rounded-lg w-48 mb-4 shadow-lg transform hover:scale-105 transition-all duration-300">
-        <img
-          src={`https://image.tmdb.org/t/p/w500${movie.poster_path}`}
-          alt={movie.title}
-          className="w-full h-72 object-cover rounded-lg mb-2"
-        />
-        <h3 className="text-center text-xl font-semibold mb-2 hover:text-red-500">{movie.title}</h3>
-        {/* Removed rating */}
-      </div>
-    ))}
-  </div>
-</div>
+      {!loading && movieResults.length > 0 && (
+        <div className="mt-6 w-full px-4 z-10 relative max-h-[calc(100vh-200px)] overflow-y-auto">
+          <h2 className="text-white text-2xl font-bold mb-4 text-center">
+            Found {movieResults.length} Movies
+          </h2>
+          <div className="flex flex-wrap justify-center gap-4">
+            {movieResults.map((movie) => (
+              <div
+                key={movie.id}
+                className="bg-gray-800 text-white p-2 rounded-lg w-48 mb-4 shadow-lg transform hover:scale-105 transition-all duration-300"
+              >
+                <img
+                  src={`https://image.tmdb.org/t/p/w500${movie.poster_path}`}
+                  alt={movie.title}
+                  className="w-full h-72 object-cover rounded-lg mb-2"
+                  onError={(e) => {
+                    e.target.src =
+                      "https://via.placeholder.com/500x750?text=No+Image";
+                  }}
+                />
+                <h3 className="text-center text-lg font-semibold mb-2 hover:text-red-500 line-clamp-2">
+                  {movie.title}
+                </h3>
+                <p className="text-center text-sm text-gray-400">
+                  ⭐ {movie.vote_average?.toFixed(1) || "N/A"}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
